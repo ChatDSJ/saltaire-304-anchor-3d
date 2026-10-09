@@ -1534,6 +1534,7 @@ const SP = dwgToThree(spawn[0], spawn[1], spawn[2]); SP.y += EYE;
 camera.position.copy(SP);
 let yaw = META.spawn_yaw * Math.PI/180, pitch = 0;
 // highest point of the house model (all non-world layers), in scene units
+const ROOF_DECK_Z = 324.25;   // roof platform top (architects' 100926 model, A-3D-CEILING deck over the kitchen), DWG inches
 const ROOF_TOP_Y = (() => { let top = -Infinity; const box = new THREE.Box3();
   for (const k in layerGroups){ if (k.startsWith('world:') || k.startsWith('light:')) continue;
     for (const o of layerGroups[k]){ if (!o.isMesh) continue; box.setFromObject(o); if (box.max.y > top) top = box.max.y; } }
@@ -1587,7 +1588,7 @@ document.addEventListener('keydown', e => {
   const dm = /^(Digit|Numpad)(\d)$/.exec(e.code);
   if (dm){ const n = +dm[2]; setHeightFt(n===0 ? 10 : n); }
   if (e.code==='KeyG') camera.position.y = GRADE_Y + EYE;
-  if (e.code==='KeyR') camera.position.y = ROOF_TOP_Y + 5*12;   // 5 ft above the highest point of the house
+  if (e.code==='KeyR') camera.position.y = ROOF_DECK_Z - FZ + 5*12;   // 5 ft above the roof platform
   if (e.code==='KeyH'){ camera.position.copy(SP); yaw = META.spawn_yaw * Math.PI/180; pitch = 0; }   // home = starting spot and view
   if (e.code==='KeyT'){ setTimeOfDay(TOD_ORDER[(TOD_ORDER.indexOf(todName)+1) % TOD_ORDER.length]); persistColors(); }   // T = next time of day
   if (e.code==='KeyF'){ fireplace.next(); persistColors(); }   // F = next fireplace design (1..10, then none)
