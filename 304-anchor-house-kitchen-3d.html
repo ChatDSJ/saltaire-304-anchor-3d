@@ -80,7 +80,7 @@
     <b>Move:</b> <b>W A S D</b> glide level with the floor in the direction you face ·
     <b>↑ ↓</b> and the <b>mouse wheel</b> same as W / S · <b>← →</b> turn in place · <b>Space / C</b> (or E / Q) up &amp; down · <b>Shift</b> fast · above 40 ft everything moves 8× faster<br>
     <b>Look:</b> click the scene to capture the mouse, or hold the button and drag · <b>Esc</b> releases<br>
-    <b>Height:</b> keys <b>1–9</b> put the camera that many feet above the 2nd floor; <b>0</b> = 10 ft, <b>G</b> = ground level, <b>R</b> = 5 ft above the roof, <b>H</b> = back to the starting spot · <b>F</b> = next fireplace design (10 designs, then none) · <b>T</b> = next time of day<br>
+    <b>Height:</b> keys <b>1–9</b> put the camera that many feet above the 2nd floor; <b>0</b> = 10 ft, <b>G</b> = ground level, <b>R</b> = 5 ft above the roof, <b>H</b> = back to the starting spot · <b>F</b> = next fireplace design (12 designs, then none) · <b>T</b> = next time of day<br>
     <b>Surroundings:</b> terrain from the USGS elevation model; beach / water / ground from satellite imagery; houses and walks from OpenStreetMap; lighthouse at its surveyed position (its light turns counter-clockwise and flashes at you every 7.5 s, like the real one — the beam itself is not visible in the air). Neighbors are simple boxes at their mapped footprints. Sky colour is computed from the sun's position (Preetham atmospheric-scattering model, as used by the three.js sky example). Clouds drift on a 5 mph south-west breeze; stars come out at night; sailboats sit in the bay.
   </div>
 </div>
@@ -269,10 +269,10 @@ const porchSet = (() => {
   return {group:outer, count:picked.length, sourceCenter:c, porchCenter:pc};
 })();
 
-// ---------- Fireplace designs (David 2026-09-09): F cycles designs 1..10, then none; geometry and default colors mirror the fireplace gallery ----------
+// ---------- Fireplace designs (David 2026-09-09): F cycles designs 1..12, then none (11/12 = Marta's 100926 fireplace, solid / glass sides, added 2026-10-17); geometry and default colors mirror the fireplace gallery ----------
 // Placed where the architects drew the fireplace (DWG hearth centre x 5390.25, y 400; floor z 210 -> y 0; ceiling 117 in above the floor).
 // Design 6 = the architects' own fireplace (hearth bench + firebox + chimney), so the DWG layer A-3D-FIREPLACE is hidden and replaced by these.
-const FP = {dwgCenter:[5388.72, 407.5], ceil:325 - 210, defaultIndex:6, NONE:11};
+const FP = {dwgCenter:[5388.72, 407.5], ceil:325 - 210, defaultIndex:6, NONE:13};
 const FP_STYLE = {
   'fireplace:steel':   {c:0x2b2b2b, label:'Fireplace steel', rough:0.55, metal:0.35},
   'fireplace:stone':   {c:0xb9b2a5, label:'Fireplace stone', rough:0.95},
@@ -281,6 +281,7 @@ const FP_STYLE = {
   'fireplace:dark':    {c:0x111111, label:'Firebox interior', rough:1},
   'fireplace:fire':    {c:0xff7a1a, label:'Fire', rough:1, emissive:0xff5500},
   'fireplace:glass':   {c:0x99bbcc, label:'Fireplace glass', rough:0.1, t:0.35},
+  'fireplace:wood':    {c:0x9a6a40, label:'Fireplace bench wood', rough:0.8},
 };
 for (const k in FP_STYLE){ LAYER_STYLE[k] = FP_STYLE[k]; const m = matFor(k, FP_STYLE[k]); m.flatShading = false; if (FP_STYLE[k].emissive){ m.emissive.setHex(FP_STYLE[k].emissive); m.emissiveIntensity = 0.9; } }
 for (const m of (layerGroups['A-3D-FIREPLACE'] || [])) m.visible = false;   // architects' fireplace solids: replaced by design 6
@@ -304,6 +305,22 @@ const fireplace = (() => {
     () => { const r=13, h=30; return [cyl(r, h, FM('steel')), cone(r, 16, FM('steel'), h), cyl(4, CEIL-h-16, FM('steel'), 0, h+16), box(18, 1, 14, FM('dark'), 0, 8, r-0.5), box(12, 8, 7, FM('fire'), 0, 9, r-6)]; },
     () => { const w=60, d=24; return [box(w, d, 16, FM('stone')), box(w, d, CEIL-16, FM('brick'), 0, 16, 0), ...firebox(36, 30, d-2, 0, 16, d/2)]; },
     () => { const w=84, d=16; return [box(w, d, CEIL, FM('plaster')), box(60, 1, 16, FM('dark'), 0, 24, d/2-0.4), box(56, 6, 7, FM('fire'), 0, 25, d/2-4), box(60, 0.5, 16, FM('glass'), 0, 24, d/2+0.1)]; },
+
+    // 11 / 12 = Marta's fireplace from the architects' 100926 model (DWG A-3D-FIREPLACE): wood bench with a steel-lined open cubby
+    // and a round east end, steel firebox frame with four thin side panels, round steel flue. 11 = solid panels, 12 = glass panels.
+    ...[false, true].map(glass => () => {
+      const W = FM('wood'), S = FM('steel'), fx = -22.86, out = [];
+      out.push(box(2.53, 24, 24, W, -38.985, 0, 0), box(2.47, 24, 24, W, 27.015, 0, 0), (() => { const m = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 24, 32, 1, false, 0, Math.PI), W); m.position.set(28.25, 12, 0); return m; })(),
+               box(63.5, 24, 2.5, W, -5.97, 0, 0), box(63.5, 24, 2.5, W, -5.97, 21.5, 0),
+               box(63.5, 24, 0.5, S, -5.97, 2.5, 0), box(63.5, 24, 0.5, S, -5.97, 21, 0), box(0.5, 24, 18, S, -37.47, 3, 0), box(0.5, 24, 18, S, 25.53, 3, 0));
+      out.push(box(30.78, 20, 2, S, fx, 24, 0), box(30.78, 20, 2, S, fx, 44, 0));
+      for (const px of [-37.25, -8.47]) for (const pz of [9, -9]) out.push(box(2, 2, 18, S, px, 26, pz));
+      const P = glass ? FM('glass') : S;
+      out.push(box(0.25, 16, 18, P, -37.255, 26, 0), box(0.25, 16, 18, P, -8.47, 26, 0), box(26.7, 0.25, 18, P, fx, 26, 9), box(26.7, 0.25, 18, P, fx, 26, -9));
+      if (glass) out.push(box(26.7, 16, 0.3, FM('dark'), fx, 26, 0), box(18, 8, 6, FM('fire'), fx, 26.3, 0));
+      out.push(cyl(5.86, CEIL - 46, S, fx, 46, 0));
+      return out;
+    }),
   ];
   const at = dwgToThree(FP.dwgCenter[0], FP.dwgCenter[1], FZ);   // gallery +z (front) = three +z = DWG south (toward the ocean windows)
   const groups = D.map((mk, i) => {
@@ -313,9 +330,10 @@ const fireplace = (() => {
     scene.add(g); g.updateMatrixWorld(true); return g;
   });
   let index = FP.defaultIndex;
-  const KEY = 'anchor304-fireplace-v1';
+  const KEY = 'anchor304-fireplace-v2';
   function set(i){ i = Math.max(1, Math.min(FP.NONE, +i || FP.NONE)); index = i; groups.forEach((g, k) => { g.visible = (k+1 === i); }); try { localStorage.setItem(KEY, String(i)); } catch(e){} return i; }
   function next(){ return set(index % FP.NONE + 1); }
+  try { const o = +localStorage.getItem('anchor304-fireplace-v1'); if (o >= 1 && o <= 11 && localStorage.getItem(KEY) === null) localStorage.setItem(KEY, String(o === 11 ? FP.NONE : o)); } catch(e){}
   try { const s = +localStorage.getItem(KEY); if (s >= 1 && s <= FP.NONE) index = s; } catch(e){}
   set(index);
   return {groups, set, next, index(){ return index; }, count: D.length, NONE: FP.NONE, at, FP};
@@ -1467,7 +1485,7 @@ $('color-file').addEventListener('change', e => {
 });
 $('reset-colors').addEventListener('click', () => {
   for (const k in rows){ const m = mats[k]; if (m && m.userData.defaultColor !== undefined) applyColor(k, hex(m.userData.defaultColor)); }
-  try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(TOD_KEY); localStorage.removeItem('anchor304-fireplace-v1'); } catch(e){}
+  try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(TOD_KEY); localStorage.removeItem('anchor304-fireplace-v1'); localStorage.removeItem('anchor304-fireplace-v2'); } catch(e){}
   fireplace.set(FP.defaultIndex);
   setTimeOfDay(TOD_DEFAULT);
   $('msg').textContent = 'Colors reset to defaults.';
@@ -1591,7 +1609,7 @@ document.addEventListener('keydown', e => {
   if (e.code==='KeyR') camera.position.y = ROOF_DECK_Z - FZ + 5*12;   // 5 ft above the roof platform
   if (e.code==='KeyH'){ camera.position.copy(SP); yaw = META.spawn_yaw * Math.PI/180; pitch = 0; }   // home = starting spot and view
   if (e.code==='KeyT'){ setTimeOfDay(TOD_ORDER[(TOD_ORDER.indexOf(todName)+1) % TOD_ORDER.length]); persistColors(); }   // T = next time of day
-  if (e.code==='KeyF'){ fireplace.next(); persistColors(); }   // F = next fireplace design (1..10, then none)
+  if (e.code==='KeyF'){ fireplace.next(); persistColors(); }   // F = next fireplace design (1..12, then none)
 });
 document.addEventListener('keyup', e => keys[e.code] = false);
 // speed: 8x faster whenever the camera is more than 40 ft above the 2nd floor (the height shown bottom-right)
