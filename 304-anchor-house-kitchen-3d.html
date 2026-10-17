@@ -276,7 +276,7 @@ const porchSet = (() => {
 // ---------- Fireplace designs (David 2026-09-09): F cycles designs 1..22, then none (11/12 = Marta's 100926 fireplace, solid / glass sides, added 2026-10-17); geometry and default colors mirror the fireplace gallery ----------
 // Placed where the architects drew the fireplace (DWG hearth centre x 5390.25, y 400; floor z 210 -> y 0; ceiling 117 in above the floor).
 // Design 6 = the architects' own fireplace (hearth bench + firebox + chimney), so the DWG layer A-3D-FIREPLACE is hidden and replaced by these.
-const FP = {dwgCenter:[5388.72, 407.5], ceil:325 - 210, defaultIndex:6, NONE:23};   // 13-22 = fireplace-options models (2026-10-17)
+const FP = {dwgCenter:[5388.72, 407.5], ceil:325 - 210, defaultIndex:12, NONE:23};   // 13-22 = fireplace-options models (2026-10-17)
 const FP_NAMES = ["Cube stove", "Wide box on a hearth bench", "Tall slim box", "Low wide box on legs", "Glass-front box on a plinth", "As drawn by the architects", "Suspended cone (Fireorb type)", "Cylinder stove (Malm type)", "Masonry chimney, floor to ceiling", "Linear fireplace built into a wall", "Marta's fireplace, solid sides", "Marta's fireplace, glass sides"];
 const FPX_SHORT = {"seguin-visio-8": "Seguin Visio 8", "bordelet-eva-992": "JC Bordelet Eva 992", "bordelet-zelia-908": "JC Bordelet Zelia 908", "bordelet-lea-998": "JC Bordelet Lea 998", "bordelet-tatiana-997": "JC Bordelet Tatiana 997", "donbar-9000": "Don-Bar 9000", "donbar-9200": "Don-Bar 9200", "donbar-9800": "Don-Bar 9800", "donbar-9123": "Don-Bar 9123", "donbar-9120": "Don-Bar 9120"};
 const FP_STYLE = {
@@ -646,11 +646,10 @@ const fireplace = (() => {
     scene.add(g); g.updateMatrixWorld(true); return g;
   });
   let index = FP.defaultIndex;
-  const KEY = 'anchor304-fireplace-v3';
-  try { const o2 = localStorage.getItem('anchor304-fireplace-v2'); if (o2 !== null && localStorage.getItem(KEY) === null) localStorage.setItem(KEY, String(+o2 === 13 ? FP.NONE : +o2)); } catch(e){}
+  const KEY = 'anchor304-fireplace-v4';   // v4 (2026-10-17): everyone starts at 12 = Marta's fireplace, glass sides; older saved choices are dropped
+  try { ['anchor304-fireplace-v1','anchor304-fireplace-v2','anchor304-fireplace-v3'].forEach(k => localStorage.removeItem(k)); } catch(e){}
   function set(i){ i = Math.max(1, Math.min(FP.NONE, +i || FP.NONE)); index = i; groups.forEach((g, k) => { g.visible = (k+1 === i); }); try { localStorage.setItem(KEY, String(i)); } catch(e){} return i; }
   function next(){ return set(index % FP.NONE + 1); }
-  try { const o = +localStorage.getItem('anchor304-fireplace-v1'); if (o >= 1 && o <= 11 && localStorage.getItem(KEY) === null && localStorage.getItem('anchor304-fireplace-v2') === null) localStorage.setItem(KEY, String(o === 11 ? FP.NONE : o)); } catch(e){}
   try { const s = +localStorage.getItem(KEY); if (s >= 1 && s <= FP.NONE) index = s; } catch(e){}
   set(index);
   function name(i = index){ return i === FP.NONE ? 'No fireplace' : FP_NAMES[i-1]; }
@@ -1807,7 +1806,7 @@ $('color-file').addEventListener('change', e => {
 });
 $('reset-colors').addEventListener('click', () => {
   for (const k in rows){ const m = mats[k]; if (m && m.userData.defaultColor !== undefined) applyColor(k, hex(m.userData.defaultColor)); }
-  try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(TOD_KEY); localStorage.removeItem('anchor304-fireplace-v1'); localStorage.removeItem('anchor304-fireplace-v2'); localStorage.removeItem('anchor304-fireplace-v3'); } catch(e){}
+  try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(TOD_KEY); localStorage.removeItem('anchor304-fireplace-v1'); localStorage.removeItem('anchor304-fireplace-v2'); localStorage.removeItem('anchor304-fireplace-v3'); localStorage.removeItem('anchor304-fireplace-v4'); } catch(e){}
   fireplace.set(FP.defaultIndex);
   setTimeOfDay(TOD_DEFAULT);
   $('msg').textContent = 'Colors reset to defaults.';
