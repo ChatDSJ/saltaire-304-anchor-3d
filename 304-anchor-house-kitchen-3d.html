@@ -278,7 +278,7 @@ const porchSet = (() => {
 // Design 6 = the architects' own fireplace (hearth bench + firebox + chimney), so the DWG layer A-3D-FIREPLACE is hidden and replaced by these.
 const FP = {dwgCenter:[5388.72, 407.5], ceil:325 - 210, defaultIndex:12, NONE:23};   // 13-22 = fireplace-options models (2026-10-17)
 const FP_NAMES = ["Cube stove", "Wide box on a hearth bench", "Tall slim box", "Low wide box on legs", "Glass-front box on a plinth", "As drawn by the architects", "Suspended cone (Fireorb type)", "Cylinder stove (Malm type)", "Masonry chimney, floor to ceiling", "Linear fireplace built into a wall", "Marta's fireplace, solid sides", "Marta's fireplace, glass sides"];
-const FPX_SHORT = {"seguin-visio-8": "Seguin Visio 8", "bordelet-eva-992": "JC Bordelet Eva 992", "bordelet-zelia-908": "JC Bordelet Zelia 908", "bordelet-lea-998": "JC Bordelet Lea 998", "bordelet-tatiana-997": "JC Bordelet Tatiana 997", "donbar-9000": "Don-Bar 9000", "donbar-9200": "Don-Bar 9200", "donbar-9800": "Don-Bar 9800", "donbar-9123": "Don-Bar 9123", "donbar-9120": "Don-Bar 9120"};
+const FPX_SHORT = {"seguin-visio-8": "Seguin Visio 8 on log bench", "bordelet-eva-992": "JC Bordelet Eva 992", "bordelet-zelia-908": "JC Bordelet Zelia 908", "bordelet-lea-998": "JC Bordelet Lea 998", "bordelet-tatiana-997": "JC Bordelet Tatiana 997", "donbar-9000": "Don-Bar 9000 on concrete hearth", "donbar-9200": "Don-Bar 9200", "donbar-9800": "Don-Bar 9800", "donbar-9123": "Don-Bar 9123", "donbar-9120": "Don-Bar 9120"};
 const FP_STYLE = {
   'fireplace:steel':   {c:0x2b2b2b, label:'Fireplace steel', rough:0.55, metal:0.35},
   'fireplace:stone':   {c:0xb9b2a5, label:'Fireplace stone', rough:0.95},
@@ -296,7 +296,7 @@ delete layerGroups['A-3D-FIREPLACE'];
 // ---------- Fireplace options models (David 2026-10-17): ported from fireplace-options-3d.html (mm, y up, front +z). Seguin Visio 8 VL, JC Bordelet Eva 992 / Zelia 908 / Lea 998 / Tatiana 997, Don-Bar 9000 / 9200 / 9800 / 9123 / 9120. Flues/chases run to the house ceiling. ----------
 const FPX = (() => {
 const M = (() => { const F = k => mats['fireplace:' + k];
-  return {steel:F('steel'), iron:F('steel'), ironRaised:F('steel'), inner:F('dark'), glass:F('glass'), ember:F('fire'), log:F('wood'), grate:F('steel')}; })();
+  return {steel:F('steel'), iron:F('steel'), ironRaised:F('steel'), inner:F('dark'), glass:F('glass'), ember:F('fire'), log:F('wood'), grate:F('steel'), white:F('plaster'), oak:F('wood'), concrete:F('stone')}; })();
 // ---------- helpers ----------
 function box(w, h, d, mat, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y + h / 2, z); return m; }
 function cyl(rBot, rTop, h, mat, y = 0, seg = 64, open = false) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, seg, 1, open), mat); m.position.y = y + h / 2; return m; }
@@ -353,15 +353,28 @@ function add(def) { FPX_MODELS.push(def); }
 
 // === Photo 2: Seguin Visio 8 (side-glass VL version, as installed at Casa Olea) ===
 add({
-  id: 'seguin-visio-8', group: 'Ralph photo 2 (off the shelf)', name: 'Seguin Visio 8 VL',
-  dims: 'W 800 × D 460 × H 825 mm to top of the flue collar (31½″ × 18″ × 32½″). Front glass 760 × 490 mm. Flue Ø200 mm. 169 kg.',
+  id: 'seguin-visio-8', group: 'Ralph photo 2 (off the shelf)', name: 'Seguin Visio 8 VL on the log bench (Ralph photo 2)',
+  dims: 'Stove: W 800 × D 460 × H 825 mm to top of the flue collar (31½″ × 18″ × 32½″), front glass 760 × 490 mm, flue Ø200 mm, 169 kg. Base as in Ralph\'s photo 2 (Casa Olea), sizes estimated from the photo using the 800 mm stove as the scale: 2440 × 600 × 500 mm bench (≈96″ × 24″ × 20″) with a 100 mm white stone top, three open black-steel log cubbies under the stove and an oak cupboard on the right; the stove stands on a 15 mm black steel plate.',
   source: ['Seguin product page', 'https://www.cheminees-seguin.com/en/inserts-fireboxes/visio-8/'],
   source2: ['Seguin technical drawing (PDF)', 'https://www.cheminees-seguin.com/wp-content/uploads/2026/03/Schema-technique-cd3cb15a.pdf'],
   refs: ['visio8_casaolea', 'visio8_casaolea_side', 'visio8_vl', 'visio8_drawing'], cam: [-0.75, 0.75],
-  expect: { w: 800, d: 460, h: 825, tol: 25, dTol: 45 },
+  expect: { w: 2440, d: 600, h: 1340, tol: 25, dTol: 45 },
   ceiling: null,
   build(C) {
-    const g = new THREE.Group();
+    // Ralph photo 2 (Casa Olea): bench = white stone top over 3 black-steel log cubbies + oak cupboard (right); stove on a steel plate. Sizes from the photo, 800 mm stove as scale.
+    const root = new THREE.Group(), BH = 500, PL = 15, X0 = -970, XL = 770, X1 = 1470, BD = 600, TOP = 100, CH = BH - TOP;
+    root.add(box(X1 - X0, TOP, BD, M.white, (X0 + X1) / 2, CH, 0));
+    root.add(box(X1 - XL, CH, BD, M.oak, (XL + X1) / 2, 0, 0));
+    root.add(box(XL - X0, CH, 10, M.steel, (X0 + XL) / 2, 0, -BD / 2 + 5));
+    root.add(box(XL - X0, 10, BD, M.steel, (X0 + XL) / 2, 0, 0)); root.add(box(XL - X0, 10, BD, M.steel, (X0 + XL) / 2, CH - 10, 0));
+    const cw = (XL - X0 - 12) / 3;
+    for (let i = 0; i <= 3; i++) root.add(box(12, CH, BD, M.steel, X0 + 6 + i * cw, 0, 0));
+    for (let c = 0; c < 3; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 5; k++) {
+      const l = new THREE.Mesh(new THREE.CylinderGeometry(42, 42, BD - 40, 8), M.log); l.rotation.x = Math.PI / 2;
+      l.position.set(X0 + 12 + c * cw + 50 + k * (cw - 140) / 4 + (r % 2 ? 20 : 0), 10 + 42 + r * 84, 0); root.add(l);
+    }
+    root.add(box(940, PL, 560, M.steel, 0, BH, 0));
+    const g = new THREE.Group(); g.position.y = BH + PL; root.add(g);
     const W = 800, D = 460, bodyH = 550, legH = 70;
     // legs / plinth (arched feet as in the side elevation)
     [[-W / 2 + 40, -D / 2 + 30], [W / 2 - 40, -D / 2 + 30], [-W / 2 + 40, D / 2 - 30], [W / 2 - 40, D / 2 - 30]].forEach(([x, z]) => g.add(box(70, legH, 50, M.iron, x, 0, z)));
@@ -406,11 +419,11 @@ add({
     // collar Ø200 up to 825
     g.add(cyl(118, 100, 30, M.iron, hoodY + hoodH - 5));
     g.add(cyl(100, 100, 825 - (hoodY + hoodH + 25), M.iron, hoodY + hoodH + 25, 48));
-    g.add(cyl(100, 100, C - 825, M.steel, 825, 48));   // house: Ø200 round chimney to the ceiling (David 2026-10-17)
+    g.add(cyl(100, 100, C - 825 - BH - PL, M.steel, 825, 48));   // house: Ø200 round chimney to the ceiling (David 2026-10-17)
     // door-lift / damper lever arm (collar -> right front corner)
     { const a = new THREE.Vector3(60, 790, 0), b = new THREE.Vector3(385, 560, 150); const L = a.distanceTo(b);
       const arm = new THREE.Mesh(new THREE.BoxGeometry(12, 12, L), M.iron); arm.position.copy(a).add(b).multiplyScalar(0.5); arm.lookAt(b); g.add(arm); }
-    return g;
+    return root;
   }
 });
 
@@ -497,18 +510,26 @@ add({
 // === Don-Bar 9000 series (hood hung from the ceiling over a hearth table) ===
 function donbarCommon(g, { tableTop = 432, tableT = 100 }) { return { tableTop, tableT }; }
 add({
-  id: 'donbar-9000', group: 'Don-Bar 9000 series (suspended hood)', name: 'Don-Bar 9000 — square',
-  dims: 'Square table 1022 mm (40¼″) × 100 mm, top at 432 mm (17″), on a 510 mm (20″) square pedestal. 495 mm (19½″) glass screen. Square pyramid hood 810 mm (32″) at the base, 510 mm (20″) tall. 300 mm chase, 991 mm (39″) up to an 8′ ceiling.',
+  id: 'donbar-9000', group: 'Don-Bar 9000 series (suspended hood)', name: 'Don-Bar 9000 — square, on a concrete hearth (Ralph photo 3)',
+  dims: 'Hearth as in Ralph\'s photo 3 instead of Don-Bar\'s steel table, sizes estimated from the photo: board-formed concrete bench 2400 × 900 mm (≈94″ × 35″), 400 mm thick, floating 220 mm off the floor on four thin steel legs set back from the edges, top at 620 mm (≈24″). An 820 × 500 mm steel fire pan, 150 mm deep, is sunk flush into the top under the hood, and one end face has a log niche. Open fire (no glass screen) and a round Ø300 mm flue, as in the photos. Don-Bar parts: square pyramid hood 810 mm (32″) at the base, 510 mm (20″) tall. Flue runs up to an 8′ ceiling.',
   source: ['Don-Bar 9000 series', 'https://www.don-bar.com/en/foyers-centraux-serie-9000'],
   source2: ['Don-Bar 9000 data sheet (PDF)', 'https://irp.cdn-website.com/8963be8f/files/uploaded/DataSheet-9000-rev-18-08-2014-EN.pdf'],
-  refs: ['db9000', 'db_family'], expect: { w: 1022, d: 1022, h: 2428, tol: 30 }, ceiling: 2428,
+  refs: ['db9000', 'db_family'], expect: { w: 2400, d: 900, h: 2428, tol: 30 }, ceiling: 2428,
   build(C) {
     const g = new THREE.Group(); const T = 432;
-    g.add(box(510, T - 100, 510, M.steel, 0, 0, 0)); g.add(box(1022, 100, 1022, M.steel, 0, T - 100, 0));
-    basket(g, 560, T);
-    g.add(glassBox(800, 800, 495, T));
+    // Ralph photo 3 (Casa Couturier, Mexico City; wider shot in the sibling thread): long board-formed concrete bench floating on thin
+    // steel legs set back from the edges, steel fire pan sunk flush into the top under the hood, log niche in the end face; open fire, no glass.
+    const A = -1200, B = 1200, HD = 900, Y0 = 220, HT = 620, PT = HT - 150, PX = 410, PZ = 250;
+    g.add(box(B - A, PT - Y0, HD, M.concrete, 0, Y0, 0));
+    g.add(box(-PX - A, HT - PT, HD, M.concrete, (A - PX) / 2, PT, 0)); g.add(box(B - PX, HT - PT, HD, M.concrete, (PX + B) / 2, PT, 0));
+    [-1, 1].forEach(s => g.add(box(2 * PX, HT - PT, HD / 2 - PZ, M.concrete, 0, PT, s * (PZ + (HD / 2 - PZ) / 2))));
+    g.add(box(2 * PX, 6, 2 * PZ, M.steel, 0, PT, 0));
+    [-1, 1].forEach(s => { g.add(box(2 * PX, HT - PT, 6, M.steel, 0, PT, s * (PZ - 3))); g.add(box(6, HT - PT, 2 * PZ, M.steel, s * (PX - 3), PT, 0)); });
+    g.add(box(4, 220, 500, M.inner, B + 2, Y0 + 70, 0));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(box(50, Y0, 50, M.steel, sx * 900, 0, sz * 300));
+    fire(g, 600, 400, PT + 6);
     g.add(rectFrustum(810, 810, 300, 300, 510, M.steel, T + 495));
-    g.add(box(300, C - (T + 495 + 510), 300, M.steel, 0, T + 495 + 510, 0));
+    g.add(cyl(150, 150, C - (T + 495 + 510), M.steel, T + 495 + 510, 48));
     return g;
   }
 });
