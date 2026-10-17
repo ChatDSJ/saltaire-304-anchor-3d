@@ -84,7 +84,7 @@
     <b>Move:</b> <b>W A S D</b> glide level with the floor in the direction you face ·
     <b>↑ ↓</b> and the <b>mouse wheel</b> same as W / S · <b>← →</b> turn in place · <b>Space / C</b> (or E / Q) up &amp; down · <b>Shift</b> fast · above 40 ft everything moves 8× faster<br>
     <b>Look:</b> click the scene to capture the mouse, or hold the button and drag · <b>Esc</b> releases<br>
-    <b>Height:</b> keys <b>1–9</b> put the camera that many feet above the 2nd floor; <b>0</b> = 10 ft, <b>G</b> = ground level, <b>R</b> = 5 ft above the roof, <b>H</b> = back to the starting spot · <b>F</b> = next fireplace design (22 designs, then none) · <b>T</b> = next time of day<br>
+    <b>Height:</b> keys <b>1–9</b> put the camera that many feet above the 2nd floor; <b>0</b> = 10 ft, <b>G</b> = ground level, <b>R</b> = 5 ft above the roof, <b>H</b> = back to the starting spot · <b>F</b> = next fireplace design (22 designs, then none) · <b>T</b> = next time of day · <b>K</b> = next kitchen scheme (architects' 1–3, then Michele's)<br>
     <b>Surroundings:</b> terrain from the USGS elevation model; beach / water / ground from satellite imagery; houses and walks from OpenStreetMap; lighthouse at its surveyed position (its light turns counter-clockwise and flashes at you every 7.5 s, like the real one — the beam itself is not visible in the air). Neighbors are simple boxes at their mapped footprints. Sky colour is computed from the sun's position (Preetham atmospheric-scattering model, as used by the three.js sky example). Clouds drift on a 5 mph south-west breeze; stars come out at night; sailboats sit in the bay.
   </div>
 </div>
@@ -1256,10 +1256,254 @@ function setWin(mk=WIN.mode, ok=WIN.opt){ WIN.mode=mk; WIN.opt=ok; WIN.cur=mk+'_
 setWin('north','strip');
 setTile('paint'); setTop('landr'); setSplash('landr');
 setTend('window'); setWood('walnut'); setPend('globe'); setFridge('column');
+
+// ---------- architects' Kitchen Schemes 1-3 (RISE pricing set 10.14.26, sheets A-209.01/.02/.03), K key cycles ----------
+// Kitchen frame (feet): x east from the west wall's inside face, z south from the north wall's inside face, y up from the 2F floor.
+// Dimensions read from the PDF plans/elevations at 1/2" = 1'-0" (36 pt per ft). Plan dims: 14'-5" wide; 2'-2" counters.
+const SCHEMES = (() => {
+  KG.updateMatrixWorld(true);
+  const MK = new THREE.Group(); MK.name = 'micheleKitchen';
+  [...KG.children].forEach(o => MK.add(o)); KG.add(MK);
+  const KW = W, HC = 102.2/12, WT = 8/12;                // inside width, wall top (z 312.2), wall thickness
+  const UPY = 4.65, UPD = 13/12;                          // upper cabinets: bottom 4'-7 3/4", 13" deep (plan dashed line)
+  const SM = {
+    ss: new THREE.MeshStandardMaterial({color:0xcdd1d4, metalness:.6, roughness:.32}),
+    dark: new THREE.MeshStandardMaterial({color:0x1d1f22, roughness:.25, metalness:.2}),
+    glassTop: new THREE.MeshStandardMaterial({color:0x111214, roughness:.08, metalness:.3}),
+    grate: new THREE.MeshStandardMaterial({color:0x2b2b2b, roughness:.6}),
+    knob: new THREE.MeshStandardMaterial({color:0x3a3c3f, roughness:.4, metalness:.4}),
+    sink: new THREE.MeshStandardMaterial({color:0xbfc3c6, metalness:.7, roughness:.3}),
+    chrome: new THREE.MeshStandardMaterial({color:0xd9dcdf, metalness:.85, roughness:.2}),
+    seat: new THREE.MeshStandardMaterial({color:0x6e4a2c, roughness:.6}),
+  };
+  const B = (g, x0,x1,y0,y1,z0,z1,m) => box(Math.min(x0,x1),Math.max(x0,x1),Math.min(y0,y1),Math.max(y0,y1),Math.min(z0,z1),Math.max(z0,z1),m,g);
+  const cyl = (g, r0, r1, h, x, y, z, m, rot) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, 24), m); o.position.set(x, y, z); if (rot) o.rotation[rot[0]] = rot[1]; o.castShadow = true; g.add(o); return o; };
+  // seams between doors/drawers on a cabinet face. face: 'N'|'S' (z = const) or 'E'|'W' (x = const)
+  function seams(g, face, a0, a1, f, n, ys){
+    const s = 0.012, d = (face==='N'||face==='W') ? -0.01 : 0.01;
+    for (let k = 1; k < n; k++){ const a = a0 + (a1-a0)*k/n;
+      if (face==='N'||face==='S') B(g, a-s, a+s, 0.36, CH-0.14, f, f+d, revM); else B(g, f, f+d, 0.36, CH-0.14, a-s, a+s, revM); }
+    (ys||[]).forEach(y => { if (face==='N'||face==='S') B(g, a0, a1, y-s, y+s, f, f+d, revM); else B(g, f, f+d, y-s, y+s, a0, a1, revM); });
+  }
+  // base cabinets with toe kick + stone top; front = side the doors face. top = [x0,x1,z0,z1] (may overhang); holes = cut-outs in the top
+  function base(g, x0, x1, z0, z1, front, top, holes = []){
+    const i = 0.25; let k = [x0, x1, z0, z1];
+    if (front==='N') k[2] += i; if (front==='S') k[3] -= i; if (front==='E') k[1] -= i; if (front==='W') k[0] += i;
+    B(g, k[0], k[1], 0, 0.33, k[2], k[3], mat.kick);
+    B(g, x0, x1, 0.33, CH-0.125, z0, z1, mat.cab);
+    const [X0, X1, Z0, Z1] = top || [x0, x1, z0, z1];
+    // slab split around rectangular holes (holes span part of x and part of z)
+    let pieces = [[X0, X1, Z0, Z1]];
+    holes.forEach(h => { pieces = pieces.flatMap(([a, b, c, d]) => {
+      if (h.x1 <= a || h.x0 >= b || h.z1 <= c || h.z0 >= d) return [[a, b, c, d]];
+      const out = [];
+      if (h.x0 > a) out.push([a, h.x0, c, d]); if (h.x1 < b) out.push([h.x1, b, c, d]);
+      const xa = Math.max(a, h.x0), xb = Math.min(b, h.x1);
+      if (h.z0 > c) out.push([xa, xb, c, h.z0]); if (h.z1 < d) out.push([xa, xb, h.z1, d]);
+      return out; }); });
+    pieces.forEach(([a, b, c, d]) => B(g, a, b, CH-0.125, CH, c, d, mat.top));
+  }
+  function uppers(g, x0, x1, z0, z1, y0 = UPY, y1 = H){ B(g, x0, x1, y0, y1, z0, z1, mat.cab); }
+  function sinkBowl(g, h, faucet){   // undermount stainless bowl in hole h; faucet = [x, z, facing angle]
+    const t = 0.03, yT = CH-0.125, yB = yT - 0.8;
+    B(g, h.x0, h.x1, yB-t, yB, h.z0, h.z1, SM.sink);
+    B(g, h.x0, h.x0+t, yB, yT, h.z0, h.z1, SM.sink); B(g, h.x1-t, h.x1, yB, yT, h.z0, h.z1, SM.sink);
+    B(g, h.x0, h.x1, yB, yT, h.z0, h.z0+t, SM.sink); B(g, h.x0, h.x1, yB, yT, h.z1-t, h.z1, SM.sink);
+    if (faucet) gooseneck(g, ...faucet);
+  }
+  function gooseneck(g, x, z, ang){   // pull-down faucet, spout reaching toward angle ang (0 = -z / north)
+    const f = new THREE.Group(); f.position.set(x, CH, z); f.rotation.y = ang; g.add(f);
+    cyl(f, 0.05, 0.06, 1.1, 0, 0.55, 0, SM.chrome);
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.045, 12, 30, Math.PI), SM.chrome); arc.rotation.y = Math.PI/2; arc.position.set(0, 1.1, -0.33); f.add(arc);
+    cyl(f, 0.045, 0.04, 0.45, 0, 0.88, -0.66, SM.chrome);
+    cyl(f, 0.02, 0.02, 0.25, 0.08, 0.3, 0, SM.chrome, ['z', Math.PI/2.5]);
+  }
+  function potFiller(g, x, y, z, ang){ const f = new THREE.Group(); f.position.set(x, y, z); f.rotation.y = ang; g.add(f);
+    cyl(f, 0.05, 0.05, 0.12, 0, 0, 0.06, SM.chrome, ['x', Math.PI/2]);
+    cyl(f, 0.03, 0.03, 0.9, 0.45, 0, 0.15, SM.chrome, ['z', Math.PI/2]);
+    cyl(f, 0.03, 0.03, 0.25, 0.9, -0.1, 0.15, SM.chrome); }
+  // freestanding pro range (stainless) at x0..x1 against the wall, front facing +z (north wall) or +x (west wall)
+  function range(g, a0, a1, face, burners){
+    const R = new THREE.Group(); g.add(R); const w = a1 - a0, D = C;   // local: x along the run, z out from the wall
+    B(R, 0, w, 0.25, CH, 0.05, D, SM.ss); B(R, 0.05, w-0.05, 0, 0.25, 0.2, D-0.1, SM.grate);
+    B(R, 0.25, w-0.25, 0.75, 2.05, D, D+0.01, SM.dark);                    // oven window
+    B(R, 0.2, w-0.2, 2.18, 2.24, D+0.03, D+0.12, SM.chrome);               // handle
+    const nk = Math.round(w*2); for (let k = 0; k < nk; k++) cyl(R, 0.08, 0.08, 0.08, 0.3 + (w-0.6)*k/(nk-1), 2.62, D+0.04, SM.knob, ['x', Math.PI/2]);
+    B(R, 0.05, w-0.05, CH, CH+0.06, 0.15, D-0.1, SM.grate);                 // grates
+    for (let k = 0; k < burners; k++){ const cx = 0.45 + (w-0.9)*(k % (burners/2))/((burners/2)-1), cz = k < burners/2 ? 0.6 : 1.5;
+      cyl(R, 0.22, 0.22, 0.05, cx, CH+0.07, cz, SM.dark); }
+    place(R, a0, a1, face); return R;
+  }
+  // local frame of an appliance: x along the run (0..w), z out from the wall. 'N' = north wall; 'W' = west wall (local x -> -z from a1, local z -> +x)
+  function place(o, a0, a1, face){ if (face==='N'){ o.position.set(a0, 0, 0); } else { o.rotation.y = Math.PI/2; o.position.set(0, 0, a1); } }
+  function chimneyHood(g, a0, a1, face, yb, chW){   // canopy + flue to the ceiling
+    const R = new THREE.Group(); g.add(R); const w = a1 - a0, c = w/2;
+    B(R, 0, w, yb, yb+0.37, 0, 1.9, SM.ss);
+    const geo = new THREE.CylinderGeometry(Math.SQRT2*chW/2, Math.SQRT2*(w/2), 1.1, 4, 1); geo.rotateY(Math.PI/4); geo.scale(1, 1, 1.9/w);
+    const sl = new THREE.Mesh(geo, SM.ss); sl.position.set(c, yb+0.37+0.55, 0.95); sl.castShadow = true; R.add(sl);
+    B(R, c-chW/2, c+chW/2, yb+0.92, H, 0, 0.95+chW/2*1.9/w, SM.ss);
+    place(R, a0, a1, face); return R;
+  }
+  function microwaveDrawer(g, x0, x1, y0, y1, z, dir){   // stainless front panel on face z (dir +1 = faces +z / south, -1 = faces -z / north)
+    B(g, x0, x1, y0, y1, z, z + dir*0.02, SM.ss); B(g, x0+0.15, x1-0.15, y0+0.2, y1-0.35, z + dir*0.02, z + dir*0.03, SM.dark);
+    B(g, x0+0.1, x1-0.1, y1-0.22, y1-0.17, z + dir*0.02, z + dir*0.04, SM.dark); }
+  function fridge(g){   // 36" French-door, stainless, x 11'-0" to 14'-0", cabinet above, panels each side (A-209 elev 3)
+    const x0 = 11.0, x1 = 14.0, Z = C, top = 5.85;
+    B(g, x0, x1, 0, top, 0.05, Z, SM.ss); B(g, x0+0.02, x1-0.02, 0, 0.12, Z-0.1, Z, SM.grate);
+    const s = 0.012; B(g, x0+1.5-s, x0+1.5+s, 2.12, top-0.05, Z, Z+0.01, SM.dark);
+    [2.12, 1.15].forEach(y => B(g, x0+0.02, x1-0.02, y-s, y+s, Z, Z+0.01, SM.dark));
+    [x0+1.35, x0+1.65].forEach(x => { B(g, x-0.025, x+0.025, 2.6, 4.9, Z+0.12, Z+0.16, SM.chrome); B(g, x-0.02, x+0.02, 2.6, 2.64, Z, Z+0.14, SM.chrome); B(g, x-0.02, x+0.02, 4.86, 4.9, Z, Z+0.14, SM.chrome); });
+    [1.95, 0.98].forEach(y => B(g, x0+0.4, x1-0.4, y-0.03, y+0.03, Z+0.12, Z+0.16, SM.chrome));
+    B(g, x0+0.25, x0+0.85, 2.3, 3.3, Z, Z+0.015, SM.dark);                   // dispenser
+    B(g, 10.92, x0, 0, H, 0, Z, mat.cab); B(g, x1, KW, 0, H, 0, Z, mat.cab); B(g, x0, x1, top+0.1, H, 0, Z, mat.cab);
+  }
+  function stool(g, x, z){ const sh = 2.1;
+    cyl(g, 0.6, 0.55, 0.12, x, sh, z, SM.seat);
+    [0, 1, 2, 3].forEach(i => { const a = Math.PI/4 + i*Math.PI/2; const p0 = new THREE.Vector3(x+Math.cos(a)*0.3, sh-0.06, z+Math.sin(a)*0.3), p1 = new THREE.Vector3(x+Math.cos(a)*0.5, 0, z+Math.sin(a)*0.5);
+      const d = new THREE.Vector3().subVectors(p1, p0), L = d.length(); const o = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, L, 10), stoolWood);
+      o.position.copy(p0).addScaledVector(d, 0.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); o.castShadow = true; g.add(o); });
+    const r = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.02, 8, 28), stoolWood); r.rotation.x = Math.PI/2; r.position.set(x, 0.8, z); g.add(r); }
+  function pendant(g, x, z){ const yc = 6.03, r = 0.45;   // opal globe, bottom ~5'-7" (A-209 elev 5)
+    const gl = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 20), opal); gl.scale.set(1, 0.82, 1); gl.position.set(x, yc, z); g.add(gl);
+    cyl(g, 0.012, 0.012, H-(yc+r*0.82), x, (H+yc+r*0.82)/2, z, cordM); B(g, x-0.12, x+0.12, H-0.03, H, z-0.12, z+0.12, brass); }
+  // walls with window openings. axis 'N': along x at z in [-WT,0]; 'W': along z at x in [-WT,0]. wins: {a0,a1,y0,y1}
+  function wall(g, axis, A0, A1, wins){
+    const cuts = [...new Set([A0, A1, ...wins.flatMap(w => [w.a0, w.a1])])].sort((p, q) => p-q);
+    for (let i = 0; i < cuts.length-1; i++){ const a = cuts[i], b = cuts[i+1], m = (a+b)/2;
+      const hs = wins.filter(w => w.a0 < m && w.a1 > m).sort((p, q) => p.y0-q.y0); let y = 0;
+      const seg = (y0, y1) => axis==='N' ? B(g, a, b, y0, y1, -WT, 0, mat.wall) : B(g, -WT, 0, y0, y1, a, b, mat.wall);
+      hs.forEach(h => { if (h.y0 > y) seg(y, h.y0); y = h.y1; }); if (y < HC) seg(y, HC); }
+    wins.filter(w => !w.noGlass).forEach(w => {
+      const t = 0.1, F = (a0, a1, y0, y1, d0, d1, m) => axis==='N' ? B(g, a0, a1, y0, y1, d0, d1, m) : B(g, d0, d1, y0, y1, a0, a1, m);
+      F(w.a0, w.a1, w.y0, w.y1, -0.36, -0.31, mat.glass);
+      F(w.a0, w.a1, w.y0, w.y0+t, -0.42, -0.25, trimM); F(w.a0, w.a1, w.y1-t, w.y1, -0.42, -0.25, trimM);
+      F(w.a0, w.a0+t, w.y0, w.y1, -0.42, -0.25, trimM); F(w.a1-t, w.a1, w.y0, w.y1, -0.42, -0.25, trimM);
+    });
+  }
+  // backsplash (uses the page's backsplash material, so the Kitchen panel's splash choice applies) with window gaps
+  function splash(g, axis, a0, a1, y0, y1, wins){
+    const cuts = [...new Set([a0, a1, ...wins.flatMap(w => [w.a0, w.a1]).filter(v => v > a0 && v < a1)])].sort((p, q) => p-q);
+    for (let i = 0; i < cuts.length-1; i++){ const a = cuts[i], b = cuts[i+1], m = (a+b)/2;
+      const hs = wins.filter(w => w.a0 < m && w.a1 > m); let y = y0;
+      hs.forEach(h => { if (h.y0 > y+0.02) tilePanel(axis, a, b, y, Math.min(h.y0, y1), g); y = Math.max(y, h.y1); });
+      if (y1 > y+0.02) tilePanel(axis, a, b, y, y1, g); }
+  }
+  const DINING201 = {a0:11.74, a1:KEND, y0:2.2, y1:7.2, noGlass:true};   // architects' window 201 (frame/glass from the model) starts inside this stretch
+  const SW = {y0:3.1, y1:4.55};                                          // short windows above the counter (226/227 and scheme 1's 228)
+  const TALL = {y0:2.2, y1:7.2};                                         // full windows like the dining room's 201-203
+
+  function scheme1(){ const g = new THREE.Group();
+    const wW = [{a0:0.62, a1:2.94, ...SW}, {a0:4.31, a1:6.67, ...SW}, {a0:8.0, a1:10.28, ...SW}];
+    wall(g, 'W', 0, KEND, [...wW, DINING201]); wall(g, 'N', -WT, KW+WT, []);
+    const COOK = {x0:3.42, x1:6.42, z0:0.1, z1:2.08};
+    base(g, 0, 10.92, 0, C, 'S', null, [COOK]); seams(g, 'S', 0, 3.42, C, 2); seams(g, 'S', 6.42, 10.92, C, 3, [1.25, 2.12]);
+    B(g, COOK.x0, COOK.x1, CH-0.125, CH+0.01, COOK.z0, COOK.z1, SM.glassTop);                  // 36" glass cooktop
+    [[0.7,0.6,0.32],[1.5,0.75,0.42],[2.3,0.6,0.32],[0.7,1.45,0.3],[2.3,1.45,0.36]].forEach(([dx,dz,r]) => { const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.012, 6, 40), SM.knob); ring.rotation.x = Math.PI/2; ring.position.set(COOK.x0+dx, CH+0.015, COOK.z0+dz); g.add(ring); });
+    microwaveDrawer(g, 3.68, 6.17, 1.28, 2.52, C, 1);                                          // oven under the cooktop
+    base(g, 0, C, C, 7.67, 'E'); seams(g, 'E', C, 7.67, C, 3);
+    // peninsula: DW | sink | 2 trash on the kitchen side, 4 stools on the dining side
+    const SK = {x0:6.0, x1:8.42, z0:7.95, z1:9.15};
+    base(g, 0, 10.92, 7.67, 10.08, 'N', [0, 10.92, 7.67, 11.33], [SK]); seams(g, 'N', 0, 10.92, 7.67, 8);
+    B(g, 0, 10.92, 0.33, CH-0.125, 10.08, 10.1, mat.cab);
+    sinkBowl(g, SK, [7.21, 9.4, 0]);
+    // north wall: uppers either side of the hood, appliance garage under uppers at 8'-8", cabinet over fridge
+    uppers(g, 1.15, 3.42, 0, UPD); uppers(g, 6.42, 8.67, 0, UPD); uppers(g, 8.67, 10.92, 0, UPD, CH, H);
+    B(g, 8.7, 10.89, CH+0.05, UPY-0.05, UPD, UPD+0.01, mat.tamb || mat.cab);                  // appliance garage door
+    chimneyHood(g, 3.42, 6.42, 'N', 5.58, 1.05); potFiller(g, 4.35, 4.25, 0, 0);
+    // west wall: closed uppers to 7'-8", then 3 open shelves over the peninsula (A-209.01 elev 2)
+    uppers(g, 0, UPD, 0, 7.67);
+    [UPY, 5.98, 7.2].forEach(y => B(g, 0, UPD, y, y+0.1, 7.67, 11.33, mat.shelf || mat.cab));
+    splash(g, 'N', 0, 10.92, CH, UPY, []); splash(g, 'W', C, 7.67, CH, UPY, wW);
+    fridge(g);
+    [3.52, 5.61, 7.72, 9.83].forEach(x => stool(g, x, 11.75));
+    [4.56, 7.21, 9.8].forEach(x => pendant(g, x, 9.5));
+    return g; }
+
+  function scheme2(){ const g = new THREE.Group();
+    const wN = [{a0:3.75, a1:6.04, ...SW}, {a0:8.19, a1:10.42, ...SW}];
+    const wW = [{a0:8.0, a1:10.28, y0:3.1, y1:7.15}];
+    wall(g, 'W', 0, KEND, [...wW, DINING201]); wall(g, 'N', -WT, KW+WT, wN);
+    const SK = {x0:5.88, x1:8.3, z0:0.5, z1:1.95};
+    base(g, 0, 10.92, 0, C, 'S', null, [SK]); seams(g, 'S', 2.17, 10.92, C, 6);
+    sinkBowl(g, SK, [7.08, 0.3, Math.PI]);
+    // west run with the 36" range (faces east) at z 3'-5" to 6'-5"
+    base(g, 0, C, C, 3.41, 'E'); base(g, 0, C, 6.39, 7.67, 'E');
+    const RG = range(g, 3.41, 6.39, 'W', 6);
+    const HD = chimneyHood(g, 3.41, 6.39, 'W', 5.58, 0.9); potFiller(g, 0, 4.35, 4.6, Math.PI/2);
+    uppers(g, 0, UPD, 1.08, 3.41); uppers(g, 0, UPD, 6.39, 7.67);
+    // peninsula with microwave drawer on the kitchen side
+    base(g, 0, 10.92, 7.67, 10.08, 'N', [0, 10.92, 7.67, 11.33]); seams(g, 'N', 0, 10.92, 7.67, 4);
+    B(g, 0, 10.92, 0.33, CH-0.125, 10.08, 10.1, mat.cab);
+    microwaveDrawer(g, 5.97, 8.44, 1.45, 2.7, 7.67, -1);
+    uppers(g, 0, 10.92, 0, UPD);
+    splash(g, 'N', 0, 10.92, CH, UPY, wN); splash(g, 'W', C, 7.67, CH, UPY, []);
+    fridge(g);
+    [3.51, 5.63, 7.72, 9.79].forEach(x => stool(g, x, 11.75));
+    [2.8, 6.03, 9.28].forEach(x => pendant(g, x, 9.5));
+    return g; }
+
+  function scheme3(){ const g = new THREE.Group();
+    const wN = [{a0:0.83, a1:3.06, ...SW}, {a0:7.85, a1:10.07, ...SW}];
+    const wW = [{a0:3.47, a1:5.81, ...TALL}];
+    wall(g, 'W', 0, KEND, [...wW, DINING201]); wall(g, 'N', -WT, KW+WT, wN);
+    base(g, 0, 3.98, 0, C, 'S'); base(g, 6.94, 10.92, 0, C, 'S'); seams(g, 'S', 6.94, 10.92, C, 4, [2.55]);
+    microwaveDrawer(g, 0.62, 3.42, 1.27, 2.65, C, 1);
+    range(g, 3.98, 6.94, 'N', 8);                                                            // 48" range
+    B(g, 3.98, 6.94, 5.58, 6.42, 0, 1.75, mat.cab); B(g, 4.05, 6.87, 5.56, 5.58, 0.1, 1.65, SM.ss);   // hood insert in a cabinet box
+    potFiller(g, 4.7, 4.25, 0, 0);
+    uppers(g, 0, 3.98, 0, UPD); uppers(g, 6.94, 10.92, 0, UPD); B(g, 3.98, 6.94, 6.42, H, 0, UPD, mat.cab);
+    // island 10'-11" x 4'-5": DW | sink | trash on the kitchen side, appliance garage at the west end, 4 stools
+    const SK = {x0:4.2, x1:6.6, z0:7.4, z1:8.75};
+    base(g, 0, 10.92, 7.17, 10.08, 'N', [0, 10.92, 7.17, 11.58], [SK]); seams(g, 'N', 1.67, 10.92, 7.17, 6);
+    B(g, 0, 10.92, 0.33, CH-0.125, 10.08, 10.1, mat.cab);
+    sinkBowl(g, SK, [5.4, 8.95, 0]);
+    B(g, 0, 1.67, CH, UPY, 7.43, 11.2, mat.cab); B(g, 1.67, 1.69, CH+0.06, UPY-0.06, 7.5, 11.13, mat.tamb || mat.cab);
+    B(g, 0, UPD, 5.95, 6.12, 7.53, 11.2, mat.shelf || mat.cab);                              // floating shelf (A-209.03 elev 2/5)
+    splash(g, 'N', 0, 10.92, CH, UPY, wN);
+    fridge(g);
+    [2.29, 4.40, 6.50, 8.61].forEach(x => stool(g, x, 12.0));
+    [1.89, 4.56, 7.21, 9.8].forEach(x => pendant(g, x, 9.37));
+    return g; }
+
+
+  const groups = [scheme1(), scheme2(), scheme3()];
+  groups.forEach((g, i) => { g.name = 'kitchenScheme' + (i+1); g.visible = false; KG.add(g); });
+  slabUVs();
+
+  // the architects' north kitchen wall (solid 13609, x 5298.5-5487.5, y 769-777, z 210-312.2) sits in the merged wall mesh:
+  // find its 12 triangles and swap in a copy of the geometry without them while a scheme (with its own north wall) is shown
+  KG.updateMatrixWorld(true);
+  // the wall is mitred at both ends, so match every vertex inside its box (x -WT..KW+WT, z -WT..0, y 0..HC)
+  const inBox = v => v.x > -WT-0.04 && v.x < KW+WT+0.04 && v.z > -WT-0.04 && v.z < 0.02 && v.y > -0.03 && v.y < HC+0.03;
+  const wallSwaps = [];
+  for (const m of (layerGroups['A-3D-WALLS'] || [])){
+    if (!m.isMesh || m.userData.qa.kitchen) continue;
+    const geo = m.geometry, P = geo.attributes.position, I = geo.index; if (!I) continue;
+    const v = new THREE.Vector3(), inW = [];
+    m.updateMatrixWorld(true);
+    for (let i = 0; i < P.count; i++){ v.fromBufferAttribute(P, i).applyMatrix4(m.matrixWorld); KG.worldToLocal(v);
+      inW.push(inBox(v)); }
+    const keep = []; let dropped = 0;
+    for (let t = 0; t < I.count; t += 3){ const a = I.getX(t), b = I.getX(t+1), c = I.getX(t+2);
+      if (inW[a] && inW[b] && inW[c]) dropped++; else keep.push(a, b, c); }
+    if (!dropped) continue;
+    const g2 = geo.clone(); g2.setIndex(keep); wallSwaps.push({mesh:m, full:geo, cut:g2, dropped});
+  }
+  let cur = 0;   // 0 = Michele's kitchen, 1..3 = architects' schemes
+  const KKEY = 'anchor304-kitchen-v1';
+  function set(i){ cur = ((+i || 0) % 4 + 4) % 4; MK.visible = cur === 0; groups.forEach((g, k) => g.visible = k+1 === cur);
+    wallSwaps.forEach(s => s.mesh.geometry = cur ? s.cut : s.full);
+    try { localStorage.setItem(KKEY, String(cur)); } catch(e){} return cur; }
+  function name(i = cur){ return i ? 'Kitchen Scheme ' + i : "Michele's kitchen"; }
+  try { const s = +localStorage.getItem(KKEY); if (s >= 0 && s <= 3) cur = s; } catch(e){}
+  set(cur);
+  return {groups, MK, set, next(){ return set(cur + 1); }, index(){ return cur; }, name, wallSwaps, KEY:KKEY};
+})();
+
   KG.updateMatrixWorld(true);
   walls.W.traverse(o => { if (o.isMesh && o.material === mat.wall){ o.userData.qa = {layer:'A-3D-WALLS', tris:12, kitchen:true}; (layerGroups['A-3D-WALLS'] ||= []).push(o); } });
   KG.traverse(o => { if (o.isMesh && !o.userData.qa){ o.userData.qa = {layer:'kitchen', tris:o.geometry.index ? o.geometry.index.count/3 : o.geometry.attributes.position.count/3}; } });
-  return {group:KG, setWood, setPend, setTile, setTend, setTop, setSplash, setWin, setFridge, toggleFridge, toggleFridgePart, frButtons, WIN, H, W};
+  return {group:KG, schemes:SCHEMES, setWood, setPend, setTile, setTend, setTop, setSplash, setWin, setFridge, toggleFridge, toggleFridgePart, frButtons, WIN, H, W};
   })(scene_);
 })();
 
@@ -1829,6 +2073,7 @@ $('reset-colors').addEventListener('click', () => {
   for (const k in rows){ const m = mats[k]; if (m && m.userData.defaultColor !== undefined) applyColor(k, hex(m.userData.defaultColor)); }
   try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(TOD_KEY); localStorage.removeItem('anchor304-fireplace-v1'); localStorage.removeItem('anchor304-fireplace-v2'); localStorage.removeItem('anchor304-fireplace-v3'); localStorage.removeItem('anchor304-fireplace-v4'); } catch(e){}
   fireplace.set(FP.defaultIndex);
+  kitchen.schemes.set(0);
   setTimeOfDay(TOD_DEFAULT);
   $('msg').textContent = 'Colors reset to defaults.';
 });
@@ -1951,6 +2196,7 @@ document.addEventListener('keydown', e => {
   if (e.code==='KeyR') camera.position.y = ROOF_DECK_Z - FZ + 5*12;   // 5 ft above the roof platform
   if (e.code==='KeyH'){ camera.position.copy(SP); yaw = META.spawn_yaw * Math.PI/180; pitch = 0; }   // home = starting spot and view
   if (e.code==='KeyT'){ setTimeOfDay(TOD_ORDER[(TOD_ORDER.indexOf(todName)+1) % TOD_ORDER.length]); persistColors(); }   // T = next time of day
+  if (e.code==='KeyK'){ kitchen.schemes.next(); showFpName(kitchen.schemes.name()); }   // K = next kitchen scheme (architects' 1-3, then Michele's); name top right for 5 s
   if (e.code==='KeyF'){ fireplace.next(); persistColors(); showFpName(fireplace.name()); }   // F = next fireplace design (1..22, then none); name shows top right for 5 s
 });
 document.addEventListener('keyup', e => keys[e.code] = false);
