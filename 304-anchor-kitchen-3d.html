@@ -72,6 +72,7 @@
   <button data-splash="wave_v">Heath Wave · vertical</button>
   <button data-splash="wave_h">Heath Wave · horizontal</button>
   <button data-splash="wavebrick_h">Heath Wave · horiz. offset</button>
+  <button data-splash="kgreen_v">Heath Kitchen Green 4×4</button>
 </div>
 <div class="bar bar5" id="bar5"><span>Wood:</span>
   <button data-wood="walnut" class="on">1 · Walnut</button>
@@ -595,6 +596,9 @@ const TILES={
   // same tile laid like Heath's install photo: horizontal, offset by half a tile each row
   wavebrick:{seed:58,w:2,h:8,brick:true,grout:'#cfd0cc',groutIn:0.09,vary:0.08,gloss:false,mottle:0,em:0x8c8c8c,rough:.12,
     colors:[[104,138,142],[98,132,137],[110,146,150],[96,128,133],[107,141,141]]},
+  // Heath Ceramics G121 "Kitchen Green" (glossy, opaque-to-translucent green over brown clay) on Heath's 4x4 Classic Field; colors sampled from heathceramics.com 3x3 install photo
+  kgreen:{seed:61,w:4,h:4,grout:'#b9b8ae',groutIn:0.07,vary:0.10,gloss:false,mottle:0,em:0x8c8c8c,rough:.12,
+    colors:[[125,156,143],[140,173,155],[119,151,139],[132,166,150],[117,147,138],[136,169,153]]},
 };
 const TEX={};
 for(const k in TILES){ const v=tileCanvas(TILES[k]); TEX[k+'_v']=v;
