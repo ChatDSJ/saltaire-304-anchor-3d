@@ -68,6 +68,10 @@
   <button data-splash="white_h">White glossy · horizontal</button>
   <button data-splash="clay_v">Blush clay · vertical</button>
   <button data-splash="clay_h">Blush clay · horizontal</button>
+  <button data-splash="hanoi_v">Hanoi White 4×4 (Nais)</button>
+  <button data-splash="wave_v">Heath Wave · vertical</button>
+  <button data-splash="wave_h">Heath Wave · horizontal</button>
+  <button data-splash="wavebrick_h">Heath Wave · horiz. offset</button>
 </div>
 <div class="bar bar5" id="bar5"><span>Wood:</span>
   <button data-wood="walnut" class="on">1 · Walnut</button>
@@ -552,6 +556,9 @@ function tileCanvas(style){
         const rg=x.createRadialGradient(cx,cy,0,cx,cy,r); const d=rnd()<0.5;
         rg.addColorStop(0,d?'rgba(190,165,135,'+(style.mottle*0.6*rnd())+')':'rgba(255,252,245,'+(style.mottle*rnd())+')'); rg.addColorStop(1,'rgba(0,0,0,0)');
         x.save(); x.beginPath(); x.rect(px+g/2,py+g/2,w-g,h-g); x.clip(); x.fillStyle=rg; x.fillRect(px,py,w,h); x.restore(); } }
+    if(style.speck){ x.save(); x.beginPath(); x.rect(px+g/2,py+g/2,w-g,h-g); x.clip();   // iron speckles in the clay body
+      for(let k=0;k<style.speck;k++){ x.fillStyle='rgba('+(95+rnd()*40|0)+','+(70+rnd()*30|0)+','+(50+rnd()*25|0)+','+(0.35+rnd()*0.4)+')';
+        x.beginPath(); x.arc(px+w*rnd(),py+h*rnd(),0.6+rnd()*1.1,0,7); x.fill(); } x.restore(); }
     if(style.gloss){ const cx=px+w*(0.25+rnd()*0.5), cy=py+h*(0.15+rnd()*0.6), r=Math.max(w,h)*0.3;   // soft glaze sheen
       const hg=x.createRadialGradient(cx,cy,0,cx,cy,r); hg.addColorStop(0,'rgba(255,255,255,'+(0.18+rnd()*0.2)+')'); hg.addColorStop(1,'rgba(255,255,255,0)');
       x.save(); x.beginPath(); x.rect(px+g/2,py+g/2,w-g,h-g); x.clip(); x.fillStyle=hg; x.fillRect(px,py,w,h); x.restore(); }
@@ -565,7 +572,7 @@ function tileCanvas(style){
       let yy=off; segs.forEach(L=>{ const col=style.colors[Math.floor(rnd()*style.colors.length)];
         [yy, yy-24].forEach(s=>draw(px,s*PPI,style.w*PPI,L*PPI,col)); yy=(yy+L)%24; });
     } else {
-      const off=(style.jog&&rnd()<style.jog)?style.h/2:0;   // some columns slip half a tile (handmade look)
+      const off=style.brick?(c%2)*style.h/2:(style.jog&&rnd()<style.jog)?style.h/2:0;   // some columns slip half a tile (handmade look)
       for(let r=(off?-1:0);r<24/style.h;r++) draw(px,(r*style.h+off)*PPI,style.w*PPI,style.h*PPI,style.colors[Math.floor(rnd()*style.colors.length)]);
     }
   }
@@ -579,6 +586,15 @@ const TILES={
     colors:[[240,238,232],[234,231,223],[245,243,238],[228,223,212]]},
   clay:{seed:9,w:2,h:6,grout:'#d9c4b0',groutIn:0.10,vary:0.10,gloss:false,mottle:0.25,jog:0.3,em:0x8a8a8a,rough:.55,
     colors:[[228,198,174],[218,186,160],[234,206,184],[212,178,152],[224,192,166]]},
+  // Nais / Equipe "Hanoi White" 10x10 cm (~4") glossy handmade-look square: warm white, tan cloudy glaze, brown speckle
+  hanoi:{seed:44,w:4,h:4,grout:'#ece6da',groutIn:0.07,vary:0.04,gloss:true,mottle:0.22,speck:7,em:0xa4a4a4,rough:.14,
+    colors:[[246,240,230],[242,232,216],[248,245,238],[240,228,210],[245,238,226]]},
+  // Heath Ceramics G117 "Wave Gloss" (glossy sky blue, slight variation) on Heath's 2x8 Classic Field; colors sampled from heathceramics.com photos
+  wave:{seed:57,w:2,h:8,grout:'#cfd0cc',groutIn:0.09,vary:0.08,gloss:false,mottle:0,em:0x8c8c8c,rough:.12,
+    colors:[[104,138,142],[98,132,137],[110,146,150],[96,128,133],[107,141,141]]},
+  // same tile laid like Heath's install photo: horizontal, offset by half a tile each row
+  wavebrick:{seed:58,w:2,h:8,brick:true,grout:'#cfd0cc',groutIn:0.09,vary:0.08,gloss:false,mottle:0,em:0x8c8c8c,rough:.12,
+    colors:[[104,138,142],[98,132,137],[110,146,150],[96,128,133],[107,141,141]]},
 };
 const TEX={};
 for(const k in TILES){ const v=tileCanvas(TILES[k]); TEX[k+'_v']=v;
