@@ -64,7 +64,7 @@
   <div class="row"><select id="k-wood" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="walnut">Wood: walnut</option><option value="teak">Wood: teak</option><option value="rosewood">Wood: rosewood</option><option value="oak">Wood: honey oak</option><option value="ash">Wood: blond ash</option></select></div>
   <div class="row"><select id="k-pend" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="globe">Pendants: opal globe</option><option value="saucer">Pendants: bubble saucer</option><option value="dome">Pendants: brass dome</option><option value="tier">Pendants: tiered</option><option value="bell">Pendants: amber bell</option></select></div>
   <div class="row"><select id="k-top" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="landr">Countertop: Eclos Landr</option><option value="taj">Countertop: Sensa Taj Mahal</option><option value="white">Countertop: plain white</option></select></div>
-  <div class="row"><select id="k-splash" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="landr">Backsplash: Eclos Landr</option><option value="taj">Backsplash: Sensa Taj Mahal</option><option value="paint">Backsplash: painted wall</option><option value="cream_v">Backsplash: cream glossy tile, vertical</option><option value="cream_h">Backsplash: cream glossy tile, horizontal</option><option value="white_v">Backsplash: white glossy tile, vertical</option><option value="white_h">Backsplash: white glossy tile, horizontal</option><option value="clay_v">Backsplash: blush clay tile, vertical</option><option value="clay_h">Backsplash: blush clay tile, horizontal</option><option value="hanoi_v">Backsplash: Hanoi White 4x4 tile (Nais)</option><option value="wave_v">Backsplash: Heath Wave Gloss 2x8, vertical</option><option value="wave_h">Backsplash: Heath Wave Gloss 2x8, horizontal</option><option value="wavebrick_h">Backsplash: Heath Wave Gloss 2x8, horizontal offset</option><option value="kgreen_v">Backsplash: Heath Kitchen Green 4x4</option></select></div>
+  <div class="row"><select id="k-splash" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="landr">Backsplash: Eclos Landr</option><option value="taj">Backsplash: Sensa Taj Mahal</option><option value="paint">Backsplash: painted wall</option><option value="cream_v">Backsplash: cream glossy tile, vertical</option><option value="cream_h">Backsplash: cream glossy tile, horizontal</option><option value="white_v">Backsplash: white glossy tile, vertical</option><option value="white_h">Backsplash: white glossy tile, horizontal</option><option value="clay_v">Backsplash: blush clay tile, vertical</option><option value="clay_h">Backsplash: blush clay tile, horizontal</option><option value="hanoi_v">Backsplash: Hanoi White 4x4 tile (Nais)</option><option value="wave_v">Backsplash: Heath Wave Gloss 2x8, vertical</option><option value="wave_h">Backsplash: Heath Wave Gloss 2x8, horizontal</option><option value="wavebrick_h">Backsplash: Heath Wave Gloss 2x8, horizontal offset</option><option value="kgreen_v">Backsplash: Heath Kitchen Green 4x4</option><option value="remi_h">Backsplash: Edward Martin Remi Pistachio 2x17, horizontal</option><option value="remibrick_h">Backsplash: Edward Martin Remi Pistachio 2x17, horizontal offset</option></select></div>
   <div class="row"><select id="k-win" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="solid">West window: none</option><option value="strip" selected>West window: A full strip</option><option value="center">West window: B centered</option><option value="picture">West window: C tall</option><option value="shelves">West window: D tall + glass shelves</option><option value="transom">West window: E strip + transom</option></select></div>
   <div class="row"><select id="k-fr" style="flex:1;background:#2b2721;color:var(--ink);border:1px solid #4a4336;border-radius:8px;padding:5px 6px;font-size:12px"><option value="pro">Fridge: 1 Sub-Zero PRO 36 stainless</option><option value="column" selected>Fridge: 2 Designer column, wood (no freezer)</option><option value="overunder">Fridge: 3 Designer over-and-under, wood</option><option value="classic">Fridge: 4 Classic over-and-under, wood</option></select></div>
   <div class="row"><button class="btn" id="k-fropen">Open all</button></div>
@@ -1039,9 +1039,10 @@ function setPend(k){ Object.entries(PENDS).forEach(([n,g])=>g.visible=n===k); do
 let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; };
 const TILE_PX=1024, PPI=TILE_PX/24;                         // canvas = 24" x 24" repeat
 function tileCanvas(style){
+  const P=style.period||24, ppi=TILE_PX/P;   // canvas = P" x P" repeat
   const cv=document.createElement('canvas'); cv.width=cv.height=TILE_PX; const x=cv.getContext('2d');
   x.fillStyle=style.grout; x.fillRect(0,0,TILE_PX,TILE_PX);
-  const g=style.groutIn*PPI; seed=style.seed;
+  const g=style.groutIn*ppi; seed=style.seed;
   const draw=(px,py,w,h,col)=>{
     const gr=x.createLinearGradient(px,py,px+w,py+h);
     const sh=(c,k)=>'rgb('+c.map(v=>Math.max(0,Math.min(255,Math.round(v*k)))).join(',')+')';
@@ -1059,20 +1060,20 @@ function tileCanvas(style){
       const hg=x.createRadialGradient(cx,cy,0,cx,cy,r); hg.addColorStop(0,'rgba(255,255,255,'+(0.18+rnd()*0.2)+')'); hg.addColorStop(1,'rgba(255,255,255,0)');
       x.save(); x.beginPath(); x.rect(px+g/2,py+g/2,w-g,h-g); x.clip(); x.fillStyle=hg; x.fillRect(px,py,w,h); x.restore(); }
   };
-  const cols=Math.round(24/style.w);
+  const cols=Math.round(P/style.w);
   for(let c=0;c<cols;c++){
-    const px=c*style.w*PPI;
-    if(style.lengths){                                      // random stick lengths that add up to 24"
-      let y=0, off=rnd()*24, segs=[];
-      while(y<24){ let L=style.lengths[Math.floor(rnd()*style.lengths.length)]; if(y+L>24) L=24-y; segs.push(L); y+=L; }
+    const px=c*style.w*ppi;
+    if(style.lengths){                                      // random stick lengths that add up to P"
+      let y=0, off=rnd()*P, segs=[];
+      while(y<P){ let L=style.lengths[Math.floor(rnd()*style.lengths.length)]; if(y+L>P) L=P-y; segs.push(L); y+=L; }
       let yy=off; segs.forEach(L=>{ const col=style.colors[Math.floor(rnd()*style.colors.length)];
-        [yy, yy-24].forEach(s=>draw(px,s*PPI,style.w*PPI,L*PPI,col)); yy=(yy+L)%24; });
+        [yy, yy-P].forEach(s=>draw(px,s*ppi,style.w*ppi,L*ppi,col)); yy=(yy+L)%P; });
     } else {
       const off=style.brick?(c%2)*style.h/2:(style.jog&&rnd()<style.jog)?style.h/2:0;   // some columns slip half a tile (handmade look)
-      for(let r=(off?-1:0);r<24/style.h;r++) draw(px,(r*style.h+off)*PPI,style.w*PPI,style.h*PPI,style.colors[Math.floor(rnd()*style.colors.length)]);
+      for(let r=(off?-1:0);r<P/style.h;r++) draw(px,(r*style.h+off)*ppi,style.w*ppi,style.h*ppi,style.colors[Math.floor(rnd()*style.colors.length)]);
     }
   }
-  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; if(P!==24) t.repeat.set(24/P,24/P); return t;
 }
 // Michele's 3 pinned tile looks (2026-09-30); each offered vertical (as pinned) and turned horizontal
 const TILES={
@@ -1094,6 +1095,11 @@ const TILES={
   // Heath Ceramics G121 "Kitchen Green" (glossy, opaque-to-translucent green over brown clay) on Heath's 4x4 Classic Field; colors sampled from heathceramics.com 3x3 install photo
   kgreen:{seed:61,w:4,h:4,grout:'#b9b8ae',groutIn:0.07,vary:0.10,gloss:false,mottle:0,em:0x8c8c8c,rough:.12,
     colors:[[125,156,143],[140,173,155],[119,151,139],[132,166,150],[117,147,138],[136,169,153]]},
+  // Edward Martin "Remi" 2x17 Glossy Ceramic in Pistachio (pastel green, cloudy glaze); colors sampled from Edward Martin's Remi Pistachio photo. 17" doesn't divide 24, so this canvas repeats every 34"
+  remi:{seed:63,w:2,h:17,period:34,grout:'#c9cbc3',groutIn:0.07,vary:0.07,gloss:false,mottle:0.12,em:0x8c8c8c,rough:.12,
+    colors:[[166,178,160],[141,155,137],[152,166,149],[165,177,158],[133,146,130],[131,145,132]]},
+  remibrick:{seed:64,w:2,h:17,period:34,brick:true,grout:'#c9cbc3',groutIn:0.07,vary:0.07,gloss:false,mottle:0.12,em:0x8c8c8c,rough:.12,
+    colors:[[166,178,160],[141,155,137],[152,166,149],[165,177,158],[133,146,130],[131,145,132]]},
 };
 const TEX={};
 for(const k in TILES){ const v=tileCanvas(TILES[k]); TEX[k+'_v']=v;
